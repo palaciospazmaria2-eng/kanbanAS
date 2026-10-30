@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-100 text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alpine Skate - Tablero Operativo & Kanban</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            alpine: {
+              red: '#A1081A',
+              redHover: '#820513',
+              redLight: '#FDF2F3',
+              dark: '#111827',
+              grayBg: '#F4F5F7',
+              border: '#E2E8F0',
+              silver: '#CBD5E1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+
+    /* Dragging animations & visual cues */
+    .task-card {
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      touch-action: none;
+    }
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    }
+    .task-card.dragging {
+      opacity: 0.4;
+      transform: scale(0.98);
+    }
+    .column-dropzone.drag-over {
+      background-color: #FEF2F2;
+      border-style: dashed;
+      border-color: #EF4444;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-alpine-grayBg text-slate-800 selection:bg-alpine-red selection:text-white">
+
+  <!-- TOP BRAND HEADER (Alpine Skate Red Bar) -->
+  <header class="bg-alpine-red text-white sticky top-0 z-30 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between shadow-md border-b border-alpine-redHover">
+    <div class="flex items-center space-x-3 sm:space-x-4">
+      
+      <!-- Alpine Skate Vector Logo Graphic -->
+      <div class="flex-shrink-0 cursor-pointer" onclick="switchView('kanban')" title="Alpine Skate Operations">
+        <svg class="h-8 sm:h-9 w-auto drop-shadow-md" viewBox="0 0 300 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer Silver Diamond -->
+          <path d="M 150,10 L 290,65 L 150,120 L 10,65 Z" fill="#94A3B8" stroke="#E2E8F0" stroke-width="3"/>
+          <!-- Inner White Diamond Frame -->
+          <path d="M 150,22 L 270,65 L 150,108 L 30,65 Z" fill="#FFFFFF"/>
+          <!-- Red Diamond Center -->
+          <path d="M 150,32 L 250,65 L 150,98 L 50,65 Z" fill="#A1081A"/>
+          <!-- White Waves / Waves Graphic inside Diamond -->
+          <path d="M 60,65 C 100,40 130,85 180,55 C 210,38 230,55 240,65 C 210,80 180,45 130,75 C 90,95 70,75 60,65 Z" fill="#FFFFFF"/>
+          <path d="M 80,65 C 110,50 130,75 170,58 C 190,48 210,58 220,65 C 200,74 175,52 135,72 C 105,87 90,73 80,65 Z" fill="#A1081A"/>
+        </svg>
+      </div>
+
+      <!-- Header Title -->
+      <div class="border-l border-white/20 pl-3 sm:pl-4">
+        <h1 class="text-lg sm:text-xl font-black tracking-wider uppercase text-white flex items-center gap-2 font-mono">
+          ALPINE SKATE
+        </h1>
+        <p class="text-[11px] text-red-100 font-medium tracking-wide uppercase">Tablero Operativo & Kanban</p>
+      </div>
+    </div>
+
+    <!-- MAIN CONTROLS & ACTIONS -->
+    <div class="flex items-center flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-0">
+      <!-- Search Input -->
+      <div class="relative min-w-[160px] sm:min-w-[220px]">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="text" id="searchInput" placeholder="Buscar pedido, campera, tarea..." 
+          class="w-full bg-white text-slate-900 border border-transparent rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/80 shadow-inner">
+      </div>
+
+      <!-- View Tabs -->
+      <div class="bg-black/20 p-1 rounded-lg flex items-center text-xs">
+        <button id="viewKanbanBtn" onclick="switchView('kanban')" class="px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition bg-white text-alpine-red shadow">
+          <i class="ph-bold ph-columns"></i> <span class="hidden sm:inline">Tablero</span>
+        </button>
+        <button id="viewSwimlaneBtn" onclick="switchView('swimlanes')" class="px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-rows"></i> <span class="hidden sm:inline">Carriles</span>
+        </button>
+        <button id="viewListBtn" onclick="switchView('list')" class="px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
+          <i class="ph-bold ph-warning text-yellow-300"></i> <span class="hidden sm:inline">Urgencias</span>
+        </button>
+      </div>
+
+      <!-- WIP Modal Toggle Button -->
+      <button onclick="toggleWipModal()" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-medium text-white flex items-center gap-1.5 transition" title="Ajustar Límite WIP">
+        <i class="ph ph-sliders"></i> <span class="hidden md:inline">Límite WIP</span>
+      </button>
+
+      <!-- New Task CTA Button -->
+      <button onclick="openTaskModal()" class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-alpine-red font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-md transition active:scale-95">
+        <i class="ph-bold ph-plus-circle text-base"></i> Nueva Tarea
+      </button>
+    </div>
+  </header>
+
+  <!-- SUB-BAR / AREA FILTERS & STATS -->
+  <div class="bg-white border-b border-alpine-border px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 overflow-x-auto text-xs shadow-sm">
+    <div class="flex items-center gap-1.5 min-w-max">
+      <span class="text-slate-500 font-semibold mr-1 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+        <i class="ph ph-funnel"></i> Filtrar por Área:
+      </span>
+      <button onclick="filterArea('all')" class="area-filter-btn active px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm" data-area="all">Todas</button>
+      <button onclick="filterArea('urgente')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-red-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="urgente">
+        <span class="w-2 h-2 rounded-full bg-red-600"></span> 🚨 Urgencias / Bloqueos
+      </button>
+      <button onclick="filterArea('produccion')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-emerald-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="produccion">
+        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 🧵 Producción / Indumentaria
+      </button>
+      <button onclick="filterArea('mejoras')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-blue-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="mejoras">
+        <span class="w-2 h-2 rounded-full bg-blue-600"></span> 💻 Sistemas / E-commerce
+      </button>
+      <button onclick="filterArea('marketing')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-purple-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="marketing">
+        <span class="w-2 h-2 rounded-full bg-purple-600"></span> 📣 Marketing & Campañas
+      </button>
+      <button onclick="filterArea('admin')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-amber-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="admin">
+        <span class="w-2 h-2 rounded-full bg-amber-500"></span> 📦 Admin & Insumos
+      </button>
+    </div>
+
+    <!-- Quick Metrics Counter -->
+    <div id="quickMetrics" class="flex items-center gap-4 text-slate-500 text-xs min-w-max border-l border-slate-200 pl-4 font-mono">
+      <span>Total: <strong id="totalTaskCount" class="text-slate-900">0</strong></span>
+      <span>En Proceso: <strong id="wipTaskCount" class="text-alpine-red">0</strong></span>
+      <span>Vencidas: <strong id="overdueTaskCount" class="text-red-600">0</strong></span>
+    </div>
+  </div>
+
+  <!-- MAIN KANBAN BOARD AREA -->
+  <main class="flex-1 overflow-auto p-4 lg:p-6 relative">
+
+    <!-- 1. KANBAN BOARD VIEW -->
+    <div id="kanbanView" class="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start min-w-[300px]">
+      
+      <!-- COLUMN: POR HACER -->
+      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+            <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">Por Hacer</h2>
+            <span id="count-todo" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
+          </div>
+          <button onclick="openTaskModal('todo')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
+            <i class="ph-bold ph-plus"></i>
+          </button>
+        </div>
+        <div id="col-todo" data-status="todo" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+          <!-- Dynamic cards -->
+        </div>
+      </div>
+
+      <!-- COLUMN: EN PROCESO (WIP CONTROLLED) -->
+      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px] relative">
+        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-red-50/40 rounded-t-xl">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-alpine-red"></span>
+            <h2 class="font-bold text-sm text-alpine-red uppercase tracking-wide">En Proceso</h2>
+            <span id="count-in_progress" class="px-2 py-0.5 rounded-full bg-red-100 text-alpine-red text-xs font-mono font-bold">0</span>
+          </div>
+          <!-- WIP Status Counter -->
+          <div id="wipBadge" class="text-xs px-2.5 py-1 rounded-md border border-slate-200 bg-white text-slate-600 font-mono flex items-center gap-1 shadow-sm">
+            <span>WIP:</span> <span id="wipCurrent">0</span>/<span id="wipLimitDisplay">3</span>
+          </div>
+        </div>
+
+        <!-- Overlimit Alert Banner -->
+        <div id="wipWarningBanner" class="hidden bg-red-600 text-white px-3 py-1.5 text-[11px] font-bold flex items-center justify-between shadow-sm animate-pulse">
+          <span class="flex items-center gap-1"><i class="ph-bold ph-warning"></i> ¡Límite WIP superado!</span>
+          <span class="text-[10px] opacity-90 uppercase">Riesgo de embotellamiento</span>
+        </div>
+
+        <div id="col-in_progress" data-status="in_progress" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+          <!-- Dynamic cards -->
+        </div>
+      </div>
+
+      <!-- COLUMN: EN REVISIÓN -->
+      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+            <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">En Revisión</h2>
+            <span id="count-review" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
+          </div>
+          <button onclick="openTaskModal('review')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
+            <i class="ph-bold ph-plus"></i>
+          </button>
+        </div>
+        <div id="col-review" data-status="review" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+          <!-- Dynamic cards -->
+        </div>
+      </div>
+
+      <!-- COLUMN: COMPLETADO -->
+      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-emerald-50/40 rounded-t-xl">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+            <h2 class="font-bold text-sm text-emerald-800 uppercase tracking-wide">Completado</h2>
+            <span id="count-done" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono font-bold">0</span>
+          </div>
+        </div>
+        <div id="col-done" data-status="done" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+          <!-- Dynamic cards -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 2. SWIMLANES VIEW -->
+    <div id="swimlaneView" class="hidden space-y-6">
+      <!-- Dynamic swimlane rows -->
+    </div>
+
+    <!-- 3. URGENCIES / LIST VIEW -->
+    <div id="listView" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm overflow-x-auto">
+      <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+        <div>
+          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
+            <i class="ph-bold ph-warning text-red-600"></i> Vista de Alta Prioridad y Urgencias Operativas
+          </h2>
+          <p class="text-xs text-slate-500">Consolidado ordenado automáticamente por criticidad y plazo de entrega</p>
+        </div>
+      </div>
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-mono text-[10px]">
+          <tr>
+            <th class="p-3">Tarea / Pedido</th>
+            <th class="p-3">Área / Categoría</th>
+            <th class="p-3">Prioridad</th>
+            <th class="p-3">Estado</th>
+            <th class="p-3">Fecha Entrega</th>
+            <th class="p-3 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="listViewTableBody" class="divide-y divide-slate-100">
+          <!-- Injected dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- MODAL: CREATE / EDIT TASK -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <h3 id="modalTitle" class="font-bold text-base text-slate-900 flex items-center gap-2">
+          <i class="ph-bold ph-note-pencil text-alpine-red"></i> Nueva Tarea
+        </h3>
+        <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="taskForm" onsubmit="saveTask(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="taskId">
+
+        <!-- Title -->
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Título de la Tarea o Pedido *</label>
+          <input type="text" id="taskTitle" required placeholder="Ej. Campera Técnica Ski Waterproof - Lote 200" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white focus:ring-1 focus:ring-alpine-red">
+        </div>
+
+        <!-- Area & Status -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Área / Categoría *</label>
+            <select id="taskArea" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+              <option value="urgente">🚨 Urgencias / Bloqueos</option>
+              <option value="produccion" selected>🧵 Producción / Indumentaria</option>
+              <option value="mejoras">💻 Sistemas / E-commerce</option>
+              <option value="marketing">📣 Marketing & Campañas</option>
+              <option value="admin">📦 Admin & Insumos</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Estado de Columna</label>
+            <select id="taskStatus" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+              <option value="todo">Por Hacer</option>
+              <option value="in_progress">En Proceso</option>
+              <option value="review">En Revisión</option>
+              <option value="done">Completado</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Priority & Due Date -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Prioridad</label>
+            <select id="taskPriority" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+              <option value="high">🚨 Alta / Urgente</option>
+              <option value="medium" selected>🟡 Media</option>
+              <option value="low">🟢 Baja</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Fecha de Entrega / Hito *</label>
+            <input type="date" id="taskDueDate" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Ficha Técnica o Notas</label>
+          <textarea id="taskDesc" rows="3" placeholder="Especificaciones de tela, talles, insumos, enlaces a carpetas de diseño..." 
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white"></textarea>
+        </div>
+
+        <!-- Interactive Subtasks Checklist -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-slate-700 font-bold">Checklist de Pasos / Control</label>
+            <button type="button" onclick="addChecklistItem()" class="text-alpine-red hover:underline text-xs font-semibold flex items-center gap-1">
+              <i class="ph-bold ph-plus"></i> Añadir ítem
+            </button>
+          </div>
+          <div id="checklistContainer" class="space-y-2">
+            <!-- Checklist rows dynamically created -->
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
+          <button type="button" id="btnDeleteTask" onclick="deleteCurrentTask()" class="hidden text-red-600 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-1 font-semibold">
+            <i class="ph-bold ph-trash"></i> Eliminar
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition font-bold">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-alpine-red hover:bg-alpine-redHover text-white rounded-lg transition font-bold shadow-md">Guardar Tarea</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: WIP LIMIT SETTING -->
+  <div id="wipModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <h3 class="font-bold text-base text-slate-900 flex items-center gap-2">
+        <i class="ph-bold ph-sliders text-alpine-red"></i> Ajustar Límite WIP
+      </h3>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        El límite <strong>WIP (Work In Progress)</strong> controla la cantidad máxima de pedidos que pueden estar simultáneamente en la columna <strong>"En Proceso"</strong> para mantener el flujo constante en producción.
+      </p>
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Máximo de Tareas Simultáneas:</label>
+        <input type="number" id="wipInput" min="1" max="20" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-slate-900 text-sm focus:border-alpine-red focus:outline-none">
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button onclick="toggleWipModal()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition">Cancelar</button>
+        <button onclick="saveWipLimit()" class="px-4 py-1.5 bg-alpine-red hover:bg-alpine-redHover text-white text-xs font-bold rounded-lg transition shadow">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 transition-all duration-300 translate-y-20 opacity-0 pointer-events-none">
+    <i id="toastIcon" class="ph-bold ph-check-circle text-emerald-400 text-xl"></i>
+    <span id="toastMsg" class="text-xs font-medium">Notificación</span>
+  </div>
+
+  <!-- APPLICATION LOGIC JavaScript -->
+  <script>
+    // Alpine Skate Area Themes & Styling
+    const AREAS = {
+      urgente: { label: '🚨 Urgencias / Bloqueos', color: 'bg-red-600', badgeClass: 'bg-red-50 text-red-700 border-red-200' },
+      produccion: { label: '🧵 Producción / Indumentaria', color: 'bg-emerald-600', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      mejoras: { label: '💻 Sistemas / E-commerce', color: 'bg-blue-600', badgeClass: 'bg-blue-50 text-blue-700 border-blue-200' },
+      marketing: { label: '📣 Marketing & Campañas', color: 'bg-purple-600', badgeClass: 'bg-purple-50 text-purple-700 border-purple-200' },
+      admin: { label: '📦 Admin & Insumos', color: 'bg-amber-500', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' }
+    };
+
+    const PRIORITIES = {
+      high: { label: '🚨 Alta', class: 'text-red-600' },
+      medium: { label: '🟡 Media', class: 'text-amber-600' },
+      low: { label: '🟢 Baja', class: 'text-emerald-600' }
+    };
+
+    let tasks = [];
+    let wipLimit = 3;
+    let currentView = 'kanban';
+    let currentAreaFilter = 'all';
+    let searchQuery = '';
+    let draggedTaskId = null;
+
+    // Alpine Skate Initial Default Tasks
+    const defaultTasks = [
+      {
+        id: '1',
+        title: 'Campera Técnica Ski Waterproof - Lote 150 Negras',
+        area: 'produccion',
+        status: 'in_progress',
+        priority: 'high',
+        dueDate: getOffsetDate(2),
+        desc: 'Taller Central. Tela Impermeable 10k. Controlar cierres termosellados antes del empaque.',
+        checklist: [
+          { text: 'Verificación de corte y moldería', done: true },
+          { text: 'Ensamblado e hilado de cierres', done: true },
+          { text: 'Prueba de impermeabilidad', done: false }
+        ]
+      },
+      {
+        id: '2',
+        title: 'Optimización de Descuentos 3 y 6 Cuotas en Web',
+        area: 'mejoras',
+        status: 'in_progress',
+        priority: 'medium',
+        dueDate: getOffsetDate(4),
+        desc: 'Actualizar banner de cuotas sin interés para Mobbex y ajustar lógica en el checkout.',
+        checklist: [
+          { text: 'Configurar pasarela Mobbex', done: true },
+          { text: 'Test en ambiente de pruebas', done: false }
+        ]
+      },
+      {
+        id: '3',
+        title: 'Faltante de Cierres Dientes de Perro Roja Alpine',
+        area: 'urgente',
+        status: 'todo',
+        priority: 'high',
+        dueDate: getOffsetDate(0),
+        desc: 'Reposición urgente con proveedor de 300 cierres rojos para Parkas Impermeables.',
+        checklist: []
+      },
+      {
+        id: '4',
+        title: 'Campaña Colección Invierno / Ski & Snowboard',
+        area: 'marketing',
+        status: 'todo',
+        priority: 'medium',
+        dueDate: getOffsetDate(6),
+        desc: 'Subir banners de la nueva colección de camperas a la tienda e Instagram.',
+        checklist: [
+          { text: 'Diseño de piezas gráficas', done: false }
+        ]
+      },
+      {
+        id: '5',
+        title: 'Auditoría Mensual de Stock Depósito Central',
+        area: 'admin',
+        status: 'done',
+        priority: 'low',
+        dueDate: getOffsetDate(-1),
+        desc: 'Conteo físico de indumentaria urbana y accesorios.',
+        checklist: [
+          { text: 'Recuento de ítems', done: true },
+          { text: 'Sincronización con ERP', done: true }
+        ]
+      }
+    ];
+
+    function getOffsetDate(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return d.toISOString().split('T')[0];
+    }
+
+    window.onload = function() {
+      loadStorage();
+      setupEventListeners();
+      renderApp();
+    };
+
+    function loadStorage() {
+      const storedTasks = localStorage.getItem('alpine_kanban_tasks');
+      const storedWip = localStorage.getItem('alpine_kanban_wip');
+
+      if (storedTasks) {
+        tasks = JSON.parse(storedTasks);
+      } else {
+        tasks = defaultTasks;
+        saveStorage();
+      }
+
+      if (storedWip) {
+        wipLimit = parseInt(storedWip, 10);
+      }
+      document.getElementById('wipInput').value = wipLimit;
+      document.getElementById('wipLimitDisplay').textContent = wipLimit;
+    }
+
+    function saveStorage() {
+      localStorage.setItem('alpine_kanban_tasks', JSON.stringify(tasks));
+      localStorage.setItem('alpine_kanban_wip', wipLimit.toString());
+    }
+
+    function setupEventListeners() {
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        renderApp();
+      });
+
+      const dropzones = document.querySelectorAll('.column-dropzone');
+      dropzones.forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('drag-over');
+        });
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const status = zone.getAttribute('data-status');
+          if (draggedTaskId && status) {
+            moveTaskStatus(draggedTaskId, status);
+          }
+        });
+      });
+    }
+
+    // FORMULA FOR DAYS REMAINING
+    function calculateDaysRemaining(dueDateStr, status) {
+      if (!dueDateStr) return { text: '⚪ Sin fecha', colorClass: 'bg-slate-100 text-slate-500 border-slate-200', days: 999 };
+
+      if (status === 'done') {
+        return { text: '✓ Completado', colorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200', days: 0 };
+      }
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      
+      const parts = dueDateStr.split('-');
+      const due = new Date(parts[0], parts[1] - 1, parts[2]);
+      due.setHours(0,0,0,0);
+
+      const diffTime = due - today;
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        return { text: `🔴 Vencido por ${Math.abs(diffDays)} d`, colorClass: 'bg-red-100 text-red-700 border-red-300 font-bold', days: diffDays };
+      } else if (diffDays === 0) {
+        return { text: '🚨 ¡Vence hoy!', colorClass: 'bg-red-100 text-red-700 border-red-300 font-bold', days: 0 };
+      } else if (diffDays <= 3) {
+        return { text: `🟠 ${diffDays} días restantes`, colorClass: 'bg-amber-100 text-amber-800 border-amber-300', days: diffDays };
+      } else {
+        return { text: `🟢 ${diffDays} días restantes`, colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-300', days: diffDays };
+      }
+    }
+
+    function renderApp() {
+      const filtered = tasks.filter(t => {
+        const matchesArea = (currentAreaFilter === 'all') || (t.area === currentAreaFilter);
+        const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.desc && t.desc.toLowerCase().includes(searchQuery));
+        return matchesArea && matchesSearch;
+      });
+
+      document.getElementById('totalTaskCount').textContent = tasks.length;
+      const wipCount = tasks.filter(t => t.status === 'in_progress').length;
+      document.getElementById('wipTaskCount').textContent = wipCount;
+      document.getElementById('wipCurrent').textContent = wipCount;
+
+      const overdueCount = tasks.filter(t => {
+        const remaining = calculateDaysRemaining(t.dueDate, t.status);
+        return remaining.days < 0 && t.status !== 'done';
+      }).length;
+      document.getElementById('overdueTaskCount').textContent = overdueCount;
+
+      // WIP Warning Banner
+      const wipWarningBanner = document.getElementById('wipWarningBanner');
+      const wipBadge = document.getElementById('wipBadge');
+      if (wipCount > wipLimit) {
+        wipWarningBanner.classList.remove('hidden');
+        wipBadge.className = 'text-xs px-2.5 py-1 rounded-md border border-red-300 bg-red-100 text-red-700 font-mono flex items-center gap-1 font-bold shadow-sm';
+      } else {
+        wipWarningBanner.classList.add('hidden');
+        wipBadge.className = 'text-xs px-2.5 py-1 rounded-md border border-slate-200 bg-white text-slate-600 font-mono flex items-center gap-1 shadow-sm';
+      }
+
+      if (currentView === 'kanban') renderKanbanView(filtered);
+      else if (currentView === 'swimlanes') renderSwimlanesView(filtered);
+      else if (currentView === 'list') renderListView(filtered);
+    }
+
+    function renderKanbanView(filteredTasks) {
+      const statuses = ['todo', 'in_progress', 'review', 'done'];
+
+      statuses.forEach(status => {
+        const container = document.getElementById(`col-${status}`);
+        const colTasks = filteredTasks.filter(t => t.status === status);
+        document.getElementById(`count-${status}`).textContent = colTasks.length;
+
+        container.innerHTML = '';
+
+        if (colTasks.length === 0) {
+          container.innerHTML = `
+            <div class="h-28 border border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-400 text-xs italic">
+              Sin tareas
+            </div>`;
+          return;
+        }
+
+        colTasks.forEach(task => {
+          container.appendChild(createTaskCardElement(task));
+        });
+      });
+    }
+
+    function createTaskCardElement(task) {
+      const areaInfo = AREAS[task.area] || AREAS.produccion;
+      const priorityInfo = PRIORITIES[task.priority] || PRIORITIES.medium;
+      const deadline = calculateDaysRemaining(task.dueDate, task.status);
+
+      const totalItems = task.checklist ? task.checklist.length : 0;
+      const completedItems = task.checklist ? task.checklist.filter(c => c.done).length : 0;
+
+      const card = document.createElement('div');
+      card.className = 'task-card bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm cursor-grab active:cursor-grabbing relative group hover:border-slate-300';
+      card.setAttribute('draggable', 'true');
+      card.setAttribute('data-id', task.id);
+
+      card.addEventListener('dragstart', (e) => {
+        draggedTaskId = task.id;
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', task.id);
+      });
+      card.addEventListener('dragend', () => {
+        draggedTaskId = null;
+        card.classList.remove('dragging');
+      });
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[10px] px-2 py-0.5 rounded-full border ${areaInfo.badgeClass} font-semibold flex items-center gap-1">
+            ${areaInfo.label}
+          </span>
+          <span class="text-[10px] font-bold ${priorityInfo.class}">
+            ${priorityInfo.label}
+          </span>
+        </div>
+
+        <h3 onclick="openTaskModal('${task.status}', '${task.id}')" class="text-xs font-bold text-slate-900 hover:text-alpine-red transition cursor-pointer mb-1.5 leading-snug">
+          ${escapeHtml(task.title)}
+        </h3>
+
+        ${task.desc ? `<p class="text-[11px] text-slate-500 line-clamp-2 mb-2.5 leading-relaxed">${escapeHtml(task.desc)}</p>` : ''}
+
+        ${totalItems > 0 ? `
+          <div class="mb-2.5 bg-slate-50 p-1.5 rounded border border-slate-200 text-[10px] text-slate-600 flex items-center justify-between font-mono">
+            <span class="flex items-center gap-1 font-sans">
+              <i class="ph-bold ph-check-square ${completedItems === totalItems ? 'text-emerald-600' : 'text-slate-400'}"></i> Pasos
+            </span>
+            <span>${completedItems}/${totalItems}</span>
+          </div>
+        ` : ''}
+
+        <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+          <span class="px-2 py-0.5 rounded border ${deadline.colorClass} font-mono">
+            ${deadline.text}
+          </span>
+          <button onclick="openTaskModal('${task.status}', '${task.id}')" class="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded transition">
+            <i class="ph-bold ph-pencil-simple text-sm"></i>
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function renderSwimlanesView(filteredTasks) {
+      const container = document.getElementById('swimlaneView');
+      container.innerHTML = '';
+
+      Object.keys(AREAS).forEach(areaKey => {
+        const areaInfo = AREAS[areaKey];
+        const areaTasks = filteredTasks.filter(t => t.area === areaKey);
+
+        if (currentAreaFilter !== 'all' && currentAreaFilter !== areaKey) return;
+
+        const section = document.createElement('div');
+        section.className = 'bg-white border border-slate-200 rounded-xl p-4 shadow-sm';
+
+        section.innerHTML = `
+          <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-200">
+            <span class="w-3.5 h-3.5 rounded-full ${areaInfo.color}"></span>
+            <h3 class="font-bold text-sm text-slate-900 uppercase tracking-wide">${areaInfo.label}</h3>
+            <span class="text-xs text-slate-500 font-mono font-bold">(${areaTasks.length} tareas)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            ${['todo', 'in_progress', 'review', 'done'].map(status => {
+              const statusTasks = areaTasks.filter(t => t.status === status);
+              const statusLabels = { todo: 'Por Hacer', in_progress: 'En Proceso', review: 'Revisión', done: 'Completado' };
+              return `
+                <div class="bg-slate-50/80 p-3 rounded-lg border border-slate-200 min-h-[110px]">
+                  <div class="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider font-mono">${statusLabels[status]} (${statusTasks.length})</div>
+                  <div class="space-y-2">
+                    ${statusTasks.map(t => `
+                      <div onclick="openTaskModal('${t.status}', '${t.id}')" class="p-2.5 bg-white border border-slate-200 hover:border-alpine-red rounded-lg cursor-pointer text-xs shadow-sm">
+                        <div class="font-bold text-slate-900 leading-snug">${escapeHtml(t.title)}</div>
+                        <div class="text-[10px] text-slate-500 mt-1.5 font-mono">${calculateDaysRemaining(t.dueDate, t.status).text}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+        container.appendChild(section);
+      });
+    }
+
+    function renderListView(filteredTasks) {
+      const tbody = document.getElementById('listViewTableBody');
+      tbody.innerHTML = '';
+
+      const sorted = [...filteredTasks].sort((a, b) => {
+        const devA = calculateDaysRemaining(a.dueDate, a.status).days;
+        const devB = calculateDaysRemaining(b.dueDate, b.status).days;
+        return devA - devB;
+      });
+
+      sorted.forEach(t => {
+        const areaInfo = AREAS[t.area] || AREAS.produccion;
+        const priorityInfo = PRIORITIES[t.priority] || PRIORITIES.medium;
+        const deadline = calculateDaysRemaining(t.dueDate, t.status);
+
+        const statusBadges = { todo: 'Por Hacer', in_progress: 'En Proceso', review: 'En Revisión', done: 'Completado' };
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+        tr.innerHTML = `
+          <td class="p-3">
+            <div class="font-bold text-slate-900">${escapeHtml(t.title)}</div>
+            ${t.desc ? `<div class="text-[11px] text-slate-500 line-clamp-1">${escapeHtml(t.desc)}</div>` : ''}
+          </td>
+          <td class="p-3">
+            <span class="text-[10px] px-2 py-0.5 rounded border ${areaInfo.badgeClass} font-semibold">
+              ${areaInfo.label}
+            </span>
+          </td>
+          <td class="p-3 font-bold ${priorityInfo.class}">${priorityInfo.label}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-mono text-[10px]">
+              ${statusBadges[t.status]}
+            </span>
+          </td>
+          <td class="p-3 font-mono">
+            <span class="px-2 py-0.5 rounded border ${deadline.colorClass}">
+              ${deadline.text}
+            </span>
+          </td>
+          <td class="p-3 text-right">
+            <button onclick="openTaskModal('${t.status}', '${t.id}')" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded text-xs font-bold transition">
+              Editar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function moveTaskStatus(id, newStatus) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.status = newStatus;
+        saveStorage();
+        renderApp();
+        showToast(`Tarea movida a "${getStatusLabel(newStatus)}"`);
+      }
+    }
+
+    function getStatusLabel(status) {
+      const map = { todo: 'Por Hacer', in_progress: 'En Proceso', review: 'En Revisión', done: 'Completado' };
+      return map[status] || status;
+    }
+
+    function switchView(viewName) {
+      currentView = viewName;
+      document.getElementById('kanbanView').classList.add('hidden');
+      document.getElementById('swimlaneView').classList.add('hidden');
+      document.getElementById('listView').classList.add('hidden');
+
+      const btnClasses = "px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition";
+      const activeBtnClasses = "px-3 py-1.5 rounded-md font-semibold bg-white text-alpine-red shadow flex items-center gap-1.5 transition";
+
+      document.getElementById('viewKanbanBtn').className = btnClasses;
+      document.getElementById('viewSwimlaneBtn').className = btnClasses;
+      document.getElementById('viewListBtn').className = btnClasses;
+
+      if (viewName === 'kanban') {
+        document.getElementById('kanbanView').classList.remove('hidden');
+        document.getElementById('viewKanbanBtn').className = activeBtnClasses;
+      } else if (viewName === 'swimlanes') {
+        document.getElementById('swimlaneView').classList.remove('hidden');
+        document.getElementById('viewSwimlaneBtn').className = activeBtnClasses;
+      } else if (viewName === 'list') {
+        document.getElementById('listView').classList.remove('hidden');
+        document.getElementById('viewListBtn').className = activeBtnClasses;
+      }
+
+      renderApp();
+    }
+
+    function filterArea(area) {
+      currentAreaFilter = area;
+      document.querySelectorAll('.area-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-area') === area) {
+          btn.className = 'area-filter-btn px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm';
+        } else {
+          btn.className = 'area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-medium transition';
+        }
+      });
+      renderApp();
+    }
+
+    function openTaskModal(defaultStatus = 'todo', taskId = null) {
+      const modal = document.getElementById('taskModal');
+      const form = document.getElementById('taskForm');
+      const modalTitle = document.getElementById('modalTitle');
+      const btnDelete = document.getElementById('btnDeleteTask');
+      const checklistContainer = document.getElementById('checklistContainer');
+
+      form.reset();
+      checklistContainer.innerHTML = '';
+
+      if (taskId) {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        document.getElementById('taskId').value = task.id;
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskArea').value = task.area;
+        document.getElementById('taskStatus').value = task.status;
+        document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskDueDate').value = task.dueDate || '';
+        document.getElementById('taskDesc').value = task.desc || '';
+
+        modalTitle.innerHTML = `<i class="ph-bold ph-pencil-simple text-alpine-red"></i> Editar Tarea`;
+        btnDelete.classList.remove('hidden');
+
+        if (task.checklist && task.checklist.length > 0) {
+          task.checklist.forEach(item => addChecklistItem(item.text, item.done));
+        }
+      } else {
+        document.getElementById('taskId').value = '';
+        document.getElementById('taskStatus').value = defaultStatus;
+        document.getElementById('taskDueDate').value = getOffsetDate(3);
+        modalTitle.innerHTML = `<i class="ph-bold ph-plus text-alpine-red"></i> Nueva Tarea`;
+        btnDelete.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    function addChecklistItem(text = '', done = false) {
+      const container = document.getElementById('checklistContainer');
+      const div = document.createElement('div');
+      div.className = 'flex items-center gap-2';
+      div.innerHTML = `
+        <input type="checkbox" ${done ? 'checked' : ''} class="checklist-check rounded border-slate-300 text-alpine-red focus:ring-alpine-red">
+        <input type="text" value="${escapeHtml(text)}" placeholder="Ej. Control de calidad..." class="checklist-text flex-1 bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-slate-900 focus:outline-none focus:border-alpine-red">
+        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-600 p-1">
+          <i class="ph-bold ph-trash"></i>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+
+    function saveTask(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('taskId').value;
+      const title = document.getElementById('taskTitle').value.trim();
+      const area = document.getElementById('taskArea').value;
+      const status = document.getElementById('taskStatus').value;
+      const priority = document.getElementById('taskPriority').value;
+      const dueDate = document.getElementById('taskDueDate').value;
+      const desc = document.getElementById('taskDesc').value.trim();
+
+      const checklist = [];
+      document.querySelectorAll('#checklistContainer > div').forEach(row => {
+        const check = row.querySelector('.checklist-check').checked;
+        const text = row.querySelector('.checklist-text').value.trim();
+        if (text) checklist.push({ text, done: check });
+      });
+
+      if (id) {
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+          task.title = title;
+          task.area = area;
+          task.status = status;
+          task.priority = priority;
+          task.dueDate = dueDate;
+          task.desc = desc;
+          task.checklist = checklist;
+        }
+        showToast('Tarea actualizada correctamente');
+      } else {
+        const newTask = {
+          id: Date.now().toString(),
+          title,
+          area,
+          status,
+          priority,
+          dueDate,
+          desc,
+          checklist
+        };
+        tasks.push(newTask);
+        showToast('Nueva tarea agregada al tablero');
+      }
+
+      saveStorage();
+      closeTaskModal();
+      renderApp();
+    }
+
+    function deleteCurrentTask() {
+      const id = document.getElementById('taskId').value;
+      if (id) {
+        tasks = tasks.filter(t => t.id !== id);
+        saveStorage();
+        closeTaskModal();
+        renderApp();
+        showToast('Tarea eliminada');
+      }
+    }
+
+    function toggleWipModal() {
+      const modal = document.getElementById('wipModal');
+      modal.classList.toggle('hidden');
+    }
+
+    function saveWipLimit() {
+      const input = document.getElementById('wipInput');
+      const val = parseInt(input.value, 10);
+      if (val && val > 0) {
+        wipLimit = val;
+        document.getElementById('wipLimitDisplay').textContent = wipLimit;
+        saveStorage();
+        renderApp();
+        toggleWipModal();
+        showToast(`Límite WIP actualizado a ${wipLimit}`);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.textContent = msg;
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
