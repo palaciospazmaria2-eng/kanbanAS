@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alpine Skate - Tablero Operativo & Kanban</title>
+  <title>Alpine Skate - Tablero Operativo, Kanban e Inventario</title>
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Phosphor Icons -->
@@ -71,7 +71,7 @@
     <div class="flex items-center space-x-3 sm:space-x-4">
       
       <!-- Alpine Skate Vector Logo Graphic -->
-      <div class="flex-shrink-0 cursor-pointer" onclick="switchView('kanban')" title="Alpine Skate Operations">
+      <div class="flex-shrink-0 cursor-pointer" onclick="switchPage('kanban')" title="Alpine Skate Operations">
         <svg class="h-8 sm:h-9 w-auto drop-shadow-md" viewBox="0 0 300 130" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- Outer Silver Diamond -->
           <path d="M 150,10 L 290,65 L 150,120 L 10,65 Z" fill="#94A3B8" stroke="#E2E8F0" stroke-width="3"/>
@@ -85,195 +85,303 @@
         </svg>
       </div>
 
-      <!-- Header Title -->
-      <div class="border-l border-white/20 pl-3 sm:pl-4">
-        <h1 class="text-lg sm:text-xl font-black tracking-wider uppercase text-white flex items-center gap-2 font-mono">
-          ALPINE SKATE
-        </h1>
-        <p class="text-[11px] text-red-100 font-medium tracking-wide uppercase">Tablero Operativo & Kanban</p>
+      <!-- Header Title & Page Selector Tabs -->
+      <div class="border-l border-white/20 pl-3 sm:pl-4 flex items-center gap-4">
+        <div>
+          <h1 class="text-lg sm:text-xl font-black tracking-wider uppercase text-white flex items-center gap-2 font-mono">
+            ALPINE SKATE
+          </h1>
+          <p class="text-[11px] text-red-100 font-medium tracking-wide uppercase">Gestión Integrada de Operaciones</p>
+        </div>
+
+        <!-- MAIN NAVIGATION TABS -->
+        <div class="hidden md:flex items-center bg-black/20 p-1 rounded-xl ml-2 text-xs font-bold">
+          <button id="navTabKanban" onclick="switchPage('kanban')" class="px-3.5 py-1.5 rounded-lg bg-white text-alpine-red shadow flex items-center gap-2 transition">
+            <i class="ph-bold ph-kanban"></i> Tablero Operativo
+          </button>
+          <button id="navTabInventory" onclick="switchPage('inventory')" class="px-3.5 py-1.5 rounded-lg text-white hover:bg-white/10 flex items-center gap-2 transition">
+            <i class="ph-bold ph-package"></i> Inventario Oficina & Estudio
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- MAIN CONTROLS & ACTIONS -->
     <div class="flex items-center flex-wrap gap-2 sm:gap-3 mt-2 sm:mt-0">
+      
+      <!-- Mobile Switch Navigation -->
+      <div class="md:hidden flex bg-black/20 p-1 rounded-lg text-xs font-bold">
+        <button id="mobNavKanban" onclick="switchPage('kanban')" class="px-2.5 py-1 rounded-md bg-white text-alpine-red">Kanban</button>
+        <button id="mobNavInventory" onclick="switchPage('inventory')" class="px-2.5 py-1 rounded-md text-white">Inventario</button>
+      </div>
+
       <!-- Search Input -->
-      <div class="relative min-w-[160px] sm:min-w-[220px]">
+      <div class="relative min-w-[150px] sm:min-w-[200px]">
         <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-        <input type="text" id="searchInput" placeholder="Buscar pedido, campera, tarea..." 
+        <input type="text" id="searchInput" placeholder="Buscar pedido, insumo, zapatilla..." 
           class="w-full bg-white text-slate-900 border border-transparent rounded-lg pl-9 pr-3 py-1.5 text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/80 shadow-inner">
       </div>
 
-      <!-- View Tabs -->
-      <div class="bg-black/20 p-1 rounded-lg flex items-center text-xs">
-        <button id="viewKanbanBtn" onclick="switchView('kanban')" class="px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition bg-white text-alpine-red shadow">
-          <i class="ph-bold ph-columns"></i> <span class="hidden sm:inline">Tablero</span>
+      <!-- KANBAN CONTROLS CONTAINER -->
+      <div id="kanbanControls" class="flex items-center gap-2">
+        <!-- View Tabs -->
+        <div class="bg-black/20 p-1 rounded-lg flex items-center text-xs">
+          <button id="viewKanbanBtn" onclick="switchView('kanban')" class="px-2.5 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition bg-white text-alpine-red shadow">
+            <i class="ph-bold ph-columns"></i> <span class="hidden sm:inline">Tablero</span>
+          </button>
+          <button id="viewSwimlaneBtn" onclick="switchView('swimlanes')" class="px-2.5 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
+            <i class="ph-bold ph-rows"></i> <span class="hidden sm:inline">Carriles</span>
+          </button>
+          <button id="viewListBtn" onclick="switchView('list')" class="px-2.5 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
+            <i class="ph-bold ph-warning text-yellow-300"></i> <span class="hidden sm:inline">Urgencias</span>
+          </button>
+        </div>
+
+        <!-- WIP Modal Toggle Button -->
+        <button onclick="toggleWipModal()" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-medium text-white flex items-center gap-1.5 transition" title="Ajustar Límite WIP">
+          <i class="ph ph-sliders"></i> <span class="hidden lg:inline">Límite WIP</span>
         </button>
-        <button id="viewSwimlaneBtn" onclick="switchView('swimlanes')" class="px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-rows"></i> <span class="hidden sm:inline">Carriles</span>
-        </button>
-        <button id="viewListBtn" onclick="switchView('list')" class="px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition">
-          <i class="ph-bold ph-warning text-yellow-300"></i> <span class="hidden sm:inline">Urgencias</span>
+
+        <!-- New Task CTA Button -->
+        <button onclick="openTaskModal()" class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-alpine-red font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-md transition active:scale-95">
+          <i class="ph-bold ph-plus-circle text-base"></i> Tarea
         </button>
       </div>
 
-      <!-- WIP Modal Toggle Button -->
-      <button onclick="toggleWipModal()" class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-xs font-medium text-white flex items-center gap-1.5 transition" title="Ajustar Límite WIP">
-        <i class="ph ph-sliders"></i> <span class="hidden md:inline">Límite WIP</span>
-      </button>
+      <!-- INVENTORY CONTROLS CONTAINER -->
+      <div id="inventoryControls" class="hidden flex items-center gap-2">
+        <button onclick="openInventoryModal()" class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-alpine-red font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-md transition active:scale-95">
+          <i class="ph-bold ph-plus-circle text-base"></i> Nuevo Artículo
+        </button>
+      </div>
 
-      <!-- New Task CTA Button -->
-      <button onclick="openTaskModal()" class="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-alpine-red font-bold text-xs rounded-lg flex items-center gap-1.5 shadow-md transition active:scale-95">
-        <i class="ph-bold ph-plus-circle text-base"></i> Nueva Tarea
-      </button>
     </div>
   </header>
 
-  <!-- SUB-BAR / AREA FILTERS & STATS -->
-  <div class="bg-white border-b border-alpine-border px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 overflow-x-auto text-xs shadow-sm">
-    <div class="flex items-center gap-1.5 min-w-max">
-      <span class="text-slate-500 font-semibold mr-1 flex items-center gap-1 text-[11px] uppercase tracking-wider">
-        <i class="ph ph-funnel"></i> Filtrar por Área:
-      </span>
-      <button onclick="filterArea('all')" class="area-filter-btn active px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm" data-area="all">Todas</button>
-      <button onclick="filterArea('urgente')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-red-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="urgente">
-        <span class="w-2 h-2 rounded-full bg-red-600"></span> 🚨 Urgencias / Bloqueos
-      </button>
-      <button onclick="filterArea('produccion')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-emerald-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="produccion">
-        <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 🧵 Producción / Indumentaria
-      </button>
-      <button onclick="filterArea('mejoras')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-blue-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="mejoras">
-        <span class="w-2 h-2 rounded-full bg-blue-600"></span> 💻 Sistemas / E-commerce
-      </button>
-      <button onclick="filterArea('marketing')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-purple-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="marketing">
-        <span class="w-2 h-2 rounded-full bg-purple-600"></span> 📣 Marketing & Campañas
-      </button>
-      <button onclick="filterArea('admin')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-amber-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="admin">
-        <span class="w-2 h-2 rounded-full bg-amber-500"></span> 📦 Admin & Insumos
-      </button>
+  <!-- PAGE 1: KANBAN BOARD SECTION -->
+  <div id="kanbanPageSection" class="flex-1 flex flex-col overflow-hidden">
+    <!-- SUB-BAR / AREA FILTERS & STATS -->
+    <div class="bg-white border-b border-alpine-border px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 overflow-x-auto text-xs shadow-sm">
+      <div class="flex items-center gap-1.5 min-w-max">
+        <span class="text-slate-500 font-semibold mr-1 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+          <i class="ph ph-funnel"></i> Filtrar por Área:
+        </span>
+        <button onclick="filterArea('all')" class="area-filter-btn active px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm" data-area="all">Todas</button>
+        <button onclick="filterArea('urgente')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-red-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="urgente">
+          <span class="w-2 h-2 rounded-full bg-red-600"></span> 🚨 Urgencias / Bloqueos
+        </button>
+        <button onclick="filterArea('produccion')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-emerald-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="produccion">
+          <span class="w-2 h-2 rounded-full bg-emerald-600"></span> 🧵 Producción / Indumentaria
+        </button>
+        <button onclick="filterArea('mejoras')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-blue-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="mejoras">
+          <span class="w-2 h-2 rounded-full bg-blue-600"></span> 💻 Sistemas / E-commerce
+        </button>
+        <button onclick="filterArea('marketing')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-purple-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="marketing">
+          <span class="w-2 h-2 rounded-full bg-purple-600"></span> 📣 Marketing & Campañas
+        </button>
+        <button onclick="filterArea('admin')" class="area-filter-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-amber-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-area="admin">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span> 📦 Admin & Insumos
+        </button>
+      </div>
+
+      <!-- Quick Metrics Counter -->
+      <div id="quickMetrics" class="flex items-center gap-4 text-slate-500 text-xs min-w-max border-l border-slate-200 pl-4 font-mono">
+        <span>Total: <strong id="totalTaskCount" class="text-slate-900">0</strong></span>
+        <span>En Proceso: <strong id="wipTaskCount" class="text-alpine-red">0</strong></span>
+        <span>Vencidas: <strong id="overdueTaskCount" class="text-red-600">0</strong></span>
+      </div>
     </div>
 
-    <!-- Quick Metrics Counter -->
-    <div id="quickMetrics" class="flex items-center gap-4 text-slate-500 text-xs min-w-max border-l border-slate-200 pl-4 font-mono">
-      <span>Total: <strong id="totalTaskCount" class="text-slate-900">0</strong></span>
-      <span>En Proceso: <strong id="wipTaskCount" class="text-alpine-red">0</strong></span>
-      <span>Vencidas: <strong id="overdueTaskCount" class="text-red-600">0</strong></span>
-    </div>
+    <!-- MAIN KANBAN BOARD AREA -->
+    <main class="flex-1 overflow-auto p-4 lg:p-6 relative">
+
+      <!-- 1. KANBAN BOARD VIEW -->
+      <div id="kanbanView" class="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start min-w-[300px]">
+        
+        <!-- COLUMN: POR HACER -->
+        <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+          <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+              <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">Por Hacer</h2>
+              <span id="count-todo" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
+            </div>
+            <button onclick="openTaskModal('todo')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
+              <i class="ph-bold ph-plus"></i>
+            </button>
+          </div>
+          <div id="col-todo" data-status="todo" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+            <!-- Dynamic cards -->
+          </div>
+        </div>
+
+        <!-- COLUMN: EN PROCESO (WIP CONTROLLED) -->
+        <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px] relative">
+          <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-red-50/40 rounded-t-xl">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-alpine-red"></span>
+              <h2 class="font-bold text-sm text-alpine-red uppercase tracking-wide">En Proceso</h2>
+              <span id="count-in_progress" class="px-2 py-0.5 rounded-full bg-red-100 text-alpine-red text-xs font-mono font-bold">0</span>
+            </div>
+            <!-- WIP Status Counter -->
+            <div id="wipBadge" class="text-xs px-2.5 py-1 rounded-md border border-slate-200 bg-white text-slate-600 font-mono flex items-center gap-1 shadow-sm">
+              <span>WIP:</span> <span id="wipCurrent">0</span>/<span id="wipLimitDisplay">3</span>
+            </div>
+          </div>
+
+          <!-- Overlimit Alert Banner -->
+          <div id="wipWarningBanner" class="hidden bg-red-600 text-white px-3 py-1.5 text-[11px] font-bold flex items-center justify-between shadow-sm animate-pulse">
+            <span class="flex items-center gap-1"><i class="ph-bold ph-warning"></i> ¡Límite WIP superado!</span>
+            <span class="text-[10px] opacity-90 uppercase">Riesgo de embotellamiento</span>
+          </div>
+
+          <div id="col-in_progress" data-status="in_progress" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+            <!-- Dynamic cards -->
+          </div>
+        </div>
+
+        <!-- COLUMN: EN REVISIÓN -->
+        <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+          <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+              <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">En Revisión</h2>
+              <span id="count-review" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
+            </div>
+            <button onclick="openTaskModal('review')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
+              <i class="ph-bold ph-plus"></i>
+            </button>
+          </div>
+          <div id="col-review" data-status="review" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+            <!-- Dynamic cards -->
+          </div>
+        </div>
+
+        <!-- COLUMN: COMPLETADO -->
+        <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
+          <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-emerald-50/40 rounded-t-xl">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+              <h2 class="font-bold text-sm text-emerald-800 uppercase tracking-wide">Completado</h2>
+              <span id="count-done" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono font-bold">0</span>
+            </div>
+          </div>
+          <div id="col-done" data-status="done" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
+            <!-- Dynamic cards -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. SWIMLANES VIEW -->
+      <div id="swimlaneView" class="hidden space-y-6">
+        <!-- Dynamic swimlane rows -->
+      </div>
+
+      <!-- 3. URGENCIES / LIST VIEW -->
+      <div id="listView" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm overflow-x-auto">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+          <div>
+            <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
+              <i class="ph-bold ph-warning text-red-600"></i> Vista de Alta Prioridad y Urgencias Operativas
+            </h2>
+            <p class="text-xs text-slate-500">Consolidado ordenado automáticamente por criticidad y plazo de entrega</p>
+          </div>
+        </div>
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-mono text-[10px]">
+            <tr>
+              <th class="p-3">Tarea / Pedido</th>
+              <th class="p-3">Área / Categoría</th>
+              <th class="p-3">Prioridad</th>
+              <th class="p-3">Estado</th>
+              <th class="p-3">Fecha Entrega</th>
+              <th class="p-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="listViewTableBody" class="divide-y divide-slate-100">
+            <!-- Injected dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+    </main>
   </div>
 
-  <!-- MAIN KANBAN BOARD AREA -->
-  <main class="flex-1 overflow-auto p-4 lg:p-6 relative">
+  <!-- PAGE 2: INVENTORY SECTION (OFICINA DE DISEÑO & ESTUDIO DE FOTOS) -->
+  <div id="inventoryPageSection" class="hidden flex-1 flex flex-col overflow-hidden">
+    
+    <!-- SUB-BAR INVENTORY FILTERS & STATS -->
+    <div class="bg-white border-b border-alpine-border px-4 lg:px-8 py-2.5 flex items-center justify-between gap-4 overflow-x-auto text-xs shadow-sm">
+      <div class="flex items-center gap-1.5 min-w-max">
+        <span class="text-slate-500 font-semibold mr-1 flex items-center gap-1 text-[11px] uppercase tracking-wider">
+          <i class="ph ph-buildings"></i> Sector / Espacio:
+        </span>
+        <button onclick="filterInventorySector('all')" class="inv-sector-btn active px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm" data-sector="all">Todos los Sectores</button>
+        <button onclick="filterInventorySector('diseno')" class="inv-sector-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-purple-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-sector="diseno">
+          🎨 Oficina de Diseño
+        </button>
+        <button onclick="filterInventorySector('estudio')" class="inv-sector-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-blue-50 border border-slate-200 font-medium transition flex items-center gap-1.5" data-sector="estudio">
+          📸 Estudio de Fotos
+        </button>
 
-    <!-- 1. KANBAN BOARD VIEW -->
-    <div id="kanbanView" class="h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start min-w-[300px]">
-      
-      <!-- COLUMN: POR HACER -->
-      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
-        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-slate-400"></span>
-            <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">Por Hacer</h2>
-            <span id="count-todo" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
+        <span class="border-l border-slate-300 h-4 mx-2"></span>
+
+        <button onclick="toggleFilterReponer()" id="btnFilterReponer" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 font-bold hover:bg-amber-100 transition flex items-center gap-1.5">
+          <i class="ph-bold ph-warning"></i> Solo Faltantes / Reposición
+        </button>
+      </div>
+
+      <!-- Quick Inventory Metrics Counter -->
+      <div class="flex items-center gap-4 text-slate-500 text-xs min-w-max border-l border-slate-200 pl-4 font-mono">
+        <span>Ítems Registrados: <strong id="invTotalCount" class="text-slate-900">0</strong></span>
+        <span>Sin Reserva: <strong id="invAgotadoCount" class="text-red-600">0</strong></span>
+        <span>A Reponer: <strong id="invReponerCount" class="text-amber-600">0</strong></span>
+      </div>
+    </div>
+
+    <!-- MAIN INVENTORY TABLE CONTAINER -->
+    <main class="flex-1 overflow-auto p-4 lg:p-6">
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        
+        <div class="p-4 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <i class="ph-bold ph-list-checks text-alpine-red"></i> Control Físico de Insumos, Cables y Herramientas
+            </h2>
+            <p class="text-xs text-slate-500">Gestión sin rotulado individual: Control por unidades en puesto de uso y stock en reserva/cajón</p>
           </div>
-          <button onclick="openTaskModal('todo')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
-            <i class="ph-bold ph-plus"></i>
+          
+          <button onclick="openInventoryModal()" class="px-3 py-1.5 bg-alpine-red hover:bg-alpine-redHover text-white rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
+            <i class="ph-bold ph-plus"></i> Añadir Artículo
           </button>
         </div>
-        <div id="col-todo" data-status="todo" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
-          <!-- Dynamic cards -->
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-mono text-[10px]">
+              <tr>
+                <th class="p-3.5">Sector</th>
+                <th class="p-3.5">Categoría</th>
+                <th class="p-3.5">Artículo / Descripción</th>
+                <th class="p-3.5">Puesto / Ubicación</th>
+                <th class="p-3.5 text-center">En Uso (Escritorio/Puesto)</th>
+                <th class="p-3.5 text-center">En Reserva (Cajón/Stock)</th>
+                <th class="p-3.5 text-center">Mín. Deseado</th>
+                <th class="p-3.5">Estado de Stock</th>
+                <th class="p-3.5 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-slate-100">
+              <!-- Injected dynamically -->
+            </tbody>
+          </table>
         </div>
+
       </div>
+    </main>
 
-      <!-- COLUMN: EN PROCESO (WIP CONTROLLED) -->
-      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px] relative">
-        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-red-50/40 rounded-t-xl">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-alpine-red"></span>
-            <h2 class="font-bold text-sm text-alpine-red uppercase tracking-wide">En Proceso</h2>
-            <span id="count-in_progress" class="px-2 py-0.5 rounded-full bg-red-100 text-alpine-red text-xs font-mono font-bold">0</span>
-          </div>
-          <!-- WIP Status Counter -->
-          <div id="wipBadge" class="text-xs px-2.5 py-1 rounded-md border border-slate-200 bg-white text-slate-600 font-mono flex items-center gap-1 shadow-sm">
-            <span>WIP:</span> <span id="wipCurrent">0</span>/<span id="wipLimitDisplay">3</span>
-          </div>
-        </div>
-
-        <!-- Overlimit Alert Banner -->
-        <div id="wipWarningBanner" class="hidden bg-red-600 text-white px-3 py-1.5 text-[11px] font-bold flex items-center justify-between shadow-sm animate-pulse">
-          <span class="flex items-center gap-1"><i class="ph-bold ph-warning"></i> ¡Límite WIP superado!</span>
-          <span class="text-[10px] opacity-90 uppercase">Riesgo de embotellamiento</span>
-        </div>
-
-        <div id="col-in_progress" data-status="in_progress" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
-          <!-- Dynamic cards -->
-        </div>
-      </div>
-
-      <!-- COLUMN: EN REVISIÓN -->
-      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
-        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 rounded-t-xl">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-purple-600"></span>
-            <h2 class="font-bold text-sm text-slate-800 uppercase tracking-wide">En Revisión</h2>
-            <span id="count-review" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-xs font-mono font-bold">0</span>
-          </div>
-          <button onclick="openTaskModal('review')" class="p-1 hover:bg-slate-200 rounded text-slate-500 hover:text-slate-900 transition" title="Agregar tarea">
-            <i class="ph-bold ph-plus"></i>
-          </button>
-        </div>
-        <div id="col-review" data-status="review" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
-          <!-- Dynamic cards -->
-        </div>
-      </div>
-
-      <!-- COLUMN: COMPLETADO -->
-      <div class="bg-white border border-slate-200 rounded-xl flex flex-col max-h-full shadow-sm min-h-[550px]">
-        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between bg-emerald-50/40 rounded-t-xl">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
-            <h2 class="font-bold text-sm text-emerald-800 uppercase tracking-wide">Completado</h2>
-            <span id="count-done" class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-mono font-bold">0</span>
-          </div>
-        </div>
-        <div id="col-done" data-status="done" class="column-dropzone p-3 flex-1 overflow-y-auto space-y-3 min-h-[180px]">
-          <!-- Dynamic cards -->
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 2. SWIMLANES VIEW -->
-    <div id="swimlaneView" class="hidden space-y-6">
-      <!-- Dynamic swimlane rows -->
-    </div>
-
-    <!-- 3. URGENCIES / LIST VIEW -->
-    <div id="listView" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm overflow-x-auto">
-      <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-        <div>
-          <h2 class="font-bold text-base text-slate-900 flex items-center gap-2">
-            <i class="ph-bold ph-warning text-red-600"></i> Vista de Alta Prioridad y Urgencias Operativas
-          </h2>
-          <p class="text-xs text-slate-500">Consolidado ordenado automáticamente por criticidad y plazo de entrega</p>
-        </div>
-      </div>
-      <table class="w-full text-left text-xs">
-        <thead class="bg-slate-100 text-slate-600 border-b border-slate-200 uppercase font-mono text-[10px]">
-          <tr>
-            <th class="p-3">Tarea / Pedido</th>
-            <th class="p-3">Área / Categoría</th>
-            <th class="p-3">Prioridad</th>
-            <th class="p-3">Estado</th>
-            <th class="p-3">Fecha Entrega</th>
-            <th class="p-3 text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="listViewTableBody" class="divide-y divide-slate-100">
-          <!-- Injected dynamically -->
-        </tbody>
-      </table>
-    </div>
-
-  </main>
+  </div>
 
   <!-- MODAL: CREATE / EDIT TASK -->
   <div id="taskModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -375,6 +483,86 @@
     </div>
   </div>
 
+  <!-- MODAL: CREATE / EDIT INVENTORY ITEM -->
+  <div id="inventoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-slate-200 rounded-2xl max-w-md w-full flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <h3 id="invModalTitle" class="font-bold text-base text-slate-900 flex items-center gap-2">
+          <i class="ph-bold ph-package text-alpine-red"></i> Nuevo Artículo de Inventario
+        </h3>
+        <button onclick="closeInventoryModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-200 transition">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="inventoryForm" onsubmit="saveInventoryItem(event)" class="p-6 space-y-4 text-xs">
+        <input type="hidden" id="invItemId">
+
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Nombre del Artículo *</label>
+          <input type="text" id="invName" required placeholder="Ej. Zapatilla 5 tomas Kalop / Tijera de corte" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Sector / Área *</label>
+            <select id="invSector" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+              <option value="diseno">🎨 Oficina de Diseño</option>
+              <option value="estudio">📸 Estudio de Fotos</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Categoría *</label>
+            <select id="invCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+              <option value="Electricidad">⚡ Electricidad / Alargues</option>
+              <option value="Herramientas">✂️ Herramientas / Corte</option>
+              <option value="Cables & Tech">💻 Cables & Adaptadores</option>
+              <option value="Fotografía">📷 Fotografía & Luces</option>
+              <option value="Librería">📝 Librería & Insumos</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-700 font-bold mb-1">Puesto / Ubicación de Uso *</label>
+          <input type="text" id="invLocation" required placeholder="Ej. Escritorio Mac 1 / Mesa de Fotografía" 
+            class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-alpine-red focus:bg-white">
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">En Uso</label>
+            <input type="number" id="invInUse" min="0" value="1" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-center font-bold">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">En Reserva</label>
+            <input type="number" id="invReserve" min="0" value="1" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-center font-bold">
+          </div>
+          <div>
+            <label class="block text-slate-700 font-bold mb-1">Mín. Reserva</label>
+            <input type="number" id="invMin" min="0" value="1" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-center font-bold">
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-4 border-t border-slate-200 flex items-center justify-between">
+          <button type="button" id="btnDeleteInvItem" onclick="deleteCurrentInvItem()" class="hidden text-red-600 hover:text-red-800 px-3 py-2 rounded-lg hover:bg-red-50 transition flex items-center gap-1 font-semibold">
+            <i class="ph-bold ph-trash"></i> Eliminar
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeInventoryModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition font-bold">Cancelar</button>
+            <button type="submit" class="px-5 py-2 bg-alpine-red hover:bg-alpine-redHover text-white rounded-lg transition font-bold shadow-md">Guardar Insumo</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: WIP LIMIT SETTING -->
   <div id="wipModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
@@ -419,13 +607,17 @@
     };
 
     let tasks = [];
+    let inventory = [];
     let wipLimit = 3;
+    let activeMainPage = 'kanban'; // 'kanban' or 'inventory'
     let currentView = 'kanban';
     let currentAreaFilter = 'all';
+    let currentInvSectorFilter = 'all';
+    let onlyReponerFilter = false;
     let searchQuery = '';
     let draggedTaskId = null;
 
-    // Alpine Skate Initial Default Tasks
+    // Default Initial Tasks
     const defaultTasks = [
       {
         id: '1',
@@ -491,6 +683,18 @@
       }
     ];
 
+    // Default Initial Inventory Items (Oficina de Diseño & Estudio de Fotos)
+    const defaultInventory = [
+      { id: 'i1', name: 'Zapatilla eléctrica 5 tomas Kalop', sector: 'diseno', category: 'Electricidad', location: 'Escritorio Mac Principal', inUse: 2, reserve: 1, minReserve: 1 },
+      { id: 'i2', name: 'Zapatilla reforzada / Alargue 5m', sector: 'estudio', category: 'Electricidad', location: 'Trípodes de Iluminación', inUse: 3, reserve: 0, minReserve: 2 },
+      { id: 'i3', name: 'Tijera de corte textil 25cm', sector: 'estudio', category: 'Herramientas', location: 'Mesa de Producción / Preparación', inUse: 1, reserve: 0, minReserve: 1 },
+      { id: 'i4', name: 'Tijera de papel / diseño gráfica', sector: 'diseno', category: 'Herramientas', location: 'Mesa de Trabajo', inUse: 2, reserve: 1, minReserve: 1 },
+      { id: 'i5', name: 'Cutter / Trinchera metálica heavy duty', sector: 'diseno', category: 'Herramientas', location: 'Mesa de Corte de muestras', inUse: 2, reserve: 1, minReserve: 2 },
+      { id: 'i6', name: 'Cable HDMI 2.0 4K (2 metros)', sector: 'diseno', category: 'Cables & Tech', location: 'Monitores de edición', inUse: 2, reserve: 1, minReserve: 1 },
+      { id: 'i7', name: 'Pinzas C-Clamp de agarre fuerte', sector: 'estudio', category: 'Fotografía', location: 'Estructura de Fondos', inUse: 6, reserve: 2, minReserve: 4 },
+      { id: 'i8', name: 'Cinta masking tape / papel 24mm', sector: 'estudio', category: 'Fotografía', location: 'Estante de Insumos', inUse: 2, reserve: 3, minReserve: 2 }
+    ];
+
     function getOffsetDate(daysOffset) {
       const d = new Date();
       d.setDate(d.getDate() + daysOffset);
@@ -505,12 +709,20 @@
 
     function loadStorage() {
       const storedTasks = localStorage.getItem('alpine_kanban_tasks');
+      const storedInv = localStorage.getItem('alpine_inventory_items');
       const storedWip = localStorage.getItem('alpine_kanban_wip');
 
       if (storedTasks) {
         tasks = JSON.parse(storedTasks);
       } else {
         tasks = defaultTasks;
+        saveStorage();
+      }
+
+      if (storedInv) {
+        inventory = JSON.parse(storedInv);
+      } else {
+        inventory = defaultInventory;
         saveStorage();
       }
 
@@ -523,6 +735,7 @@
 
     function saveStorage() {
       localStorage.setItem('alpine_kanban_tasks', JSON.stringify(tasks));
+      localStorage.setItem('alpine_inventory_items', JSON.stringify(inventory));
       localStorage.setItem('alpine_kanban_wip', wipLimit.toString());
     }
 
@@ -550,6 +763,47 @@
           }
         });
       });
+    }
+
+    function switchPage(pageName) {
+      activeMainPage = pageName;
+      
+      const kanbanSec = document.getElementById('kanbanPageSection');
+      const invSec = document.getElementById('inventoryPageSection');
+      const kanbanCtrl = document.getElementById('kanbanControls');
+      const invCtrl = document.getElementById('inventoryControls');
+
+      const navKanban = document.getElementById('navTabKanban');
+      const navInv = document.getElementById('navTabInventory');
+      const mobKanban = document.getElementById('mobNavKanban');
+      const mobInv = document.getElementById('mobNavInventory');
+
+      const activeTabStyle = "px-3.5 py-1.5 rounded-lg bg-white text-alpine-red shadow flex items-center gap-2 transition font-bold";
+      const inactiveTabStyle = "px-3.5 py-1.5 rounded-lg text-white hover:bg-white/10 flex items-center gap-2 transition font-bold";
+
+      if (pageName === 'kanban') {
+        kanbanSec.classList.remove('hidden');
+        invSec.classList.add('hidden');
+        kanbanCtrl.classList.remove('hidden');
+        invCtrl.classList.add('hidden');
+
+        navKanban.className = activeTabStyle;
+        navInv.className = inactiveTabStyle;
+        mobKanban.className = "px-2.5 py-1 rounded-md bg-white text-alpine-red";
+        mobInv.className = "px-2.5 py-1 rounded-md text-white";
+      } else {
+        kanbanSec.classList.add('hidden');
+        invSec.classList.remove('hidden');
+        kanbanCtrl.classList.add('hidden');
+        invCtrl.classList.remove('hidden');
+
+        navKanban.className = inactiveTabStyle;
+        navInv.className = activeTabStyle;
+        mobKanban.className = "px-2.5 py-1 rounded-md text-white";
+        mobInv.className = "px-2.5 py-1 rounded-md bg-white text-alpine-red";
+      }
+
+      renderApp();
     }
 
     // FORMULA FOR DAYS REMAINING
@@ -582,6 +836,14 @@
     }
 
     function renderApp() {
+      if (activeMainPage === 'kanban') {
+        renderKanbanPage();
+      } else {
+        renderInventoryPage();
+      }
+    }
+
+    function renderKanbanPage() {
       const filtered = tasks.filter(t => {
         const matchesArea = (currentAreaFilter === 'all') || (t.area === currentAreaFilter);
         const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.desc && t.desc.toLowerCase().includes(searchQuery));
@@ -794,6 +1056,217 @@
       });
     }
 
+    // INVENTORY PAGE RENDER LOGIC
+    function renderInventoryPage() {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      let filtered = inventory.filter(item => {
+        const matchesSector = (currentInvSectorFilter === 'all') || (item.sector === currentInvSectorFilter);
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery) || item.location.toLowerCase().includes(searchQuery) || item.category.toLowerCase().includes(searchQuery);
+        
+        let matchesReponer = true;
+        if (onlyReponerFilter) {
+          matchesReponer = item.reserve < item.minReserve;
+        }
+
+        return matchesSector && matchesSearch && matchesReponer;
+      });
+
+      // Update counters
+      document.getElementById('invTotalCount').textContent = inventory.length;
+      document.getElementById('invAgotadoCount').textContent = inventory.filter(i => i.reserve === 0).length;
+      document.getElementById('invReponerCount').textContent = inventory.filter(i => i.reserve < i.minReserve).length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="p-8 text-center text-slate-400 italic">
+              No se encontraron insumos o artículos registrados con los filtros activos.
+            </td>
+          </tr>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+
+        let statusBadge = '';
+        if (item.reserve === 0) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full bg-red-100 border border-red-300 text-red-700 font-bold text-[10px] flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping"></span> 🔴 Sin Reserva</span>`;
+        } else if (item.reserve < item.minReserve) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800 font-bold text-[10px] flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> 🟡 Reponer Reserva</span>`;
+        } else {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-[10px] flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> 🟢 OK Stock</span>`;
+        }
+
+        const sectorLabel = item.sector === 'diseno' ? '🎨 Oficina Diseño' : '📸 Estudio Fotos';
+        const sectorBadgeClass = item.sector === 'diseno' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200';
+
+        tr.innerHTML = `
+          <td class="p-3.5 font-bold">
+            <span class="px-2 py-0.5 rounded border text-[10px] ${sectorBadgeClass}">${sectorLabel}</span>
+          </td>
+          <td class="p-3.5 text-slate-500 font-medium">${escapeHtml(item.category)}</td>
+          <td class="p-3.5 font-bold text-slate-900">${escapeHtml(item.name)}</td>
+          <td class="p-3.5 text-slate-600">${escapeHtml(item.location)}</td>
+          
+          <!-- En Uso Counter -->
+          <td class="p-3.5 text-center">
+            <div class="inline-flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
+              <button onclick="updateInvQty('${item.id}', 'inUse', -1)" class="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">-</button>
+              <span class="w-6 font-bold text-slate-900">${item.inUse}</span>
+              <button onclick="updateInvQty('${item.id}', 'inUse', 1)" class="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">+</button>
+            </div>
+          </td>
+
+          <!-- En Reserva Counter -->
+          <td class="p-3.5 text-center">
+            <div class="inline-flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 font-mono">
+              <button onclick="updateInvQty('${item.id}', 'reserve', -1)" class="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">-</button>
+              <span class="w-6 font-bold ${item.reserve < item.minReserve ? 'text-red-600' : 'text-slate-900'}">${item.reserve}</span>
+              <button onclick="updateInvQty('${item.id}', 'reserve', 1)" class="w-5 h-5 rounded hover:bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs">+</button>
+            </div>
+          </td>
+
+          <td class="p-3.5 text-center font-mono font-bold text-slate-500">${item.minReserve}</td>
+          <td class="p-3.5">${statusBadge}</td>
+          <td class="p-3.5 text-right">
+            <button onclick="openInventoryModal('${item.id}')" class="p-1.5 hover:bg-slate-200 text-slate-500 hover:text-slate-900 rounded transition">
+              <i class="ph-bold ph-pencil-simple text-sm"></i>
+            </button>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateInvQty(id, field, delta) {
+      const item = inventory.find(i => i.id === id);
+      if (item) {
+        if (field === 'inUse') item.inUse = Math.max(0, item.inUse + delta);
+        if (field === 'reserve') item.reserve = Math.max(0, item.reserve + delta);
+        saveStorage();
+        renderApp();
+      }
+    }
+
+    function filterInventorySector(sector) {
+      currentInvSectorFilter = sector;
+      document.querySelectorAll('.inv-sector-btn').forEach(btn => {
+        if (btn.getAttribute('data-sector') === sector) {
+          btn.className = 'inv-sector-btn px-3 py-1 rounded-full bg-alpine-red text-white font-semibold transition shadow-sm';
+        } else {
+          btn.className = 'inv-sector-btn px-3 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 font-medium transition';
+        }
+      });
+      renderApp();
+    }
+
+    function toggleFilterReponer() {
+      onlyReponerFilter = !onlyReponerFilter;
+      const btn = document.getElementById('btnFilterReponer');
+      if (onlyReponerFilter) {
+        btn.className = 'px-3 py-1 rounded-full bg-amber-600 text-white font-bold transition flex items-center gap-1.5 shadow-sm';
+      } else {
+        btn.className = 'px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 font-bold hover:bg-amber-100 transition flex items-center gap-1.5';
+      }
+      renderApp();
+    }
+
+    function openInventoryModal(itemId = null) {
+      const modal = document.getElementById('inventoryModal');
+      const form = document.getElementById('inventoryForm');
+      const title = document.getElementById('invModalTitle');
+      const btnDelete = document.getElementById('btnDeleteInvItem');
+
+      form.reset();
+
+      if (itemId) {
+        const item = inventory.find(i => i.id === itemId);
+        if (!item) return;
+
+        document.getElementById('invItemId').value = item.id;
+        document.getElementById('invName').value = item.name;
+        document.getElementById('invSector').value = item.sector;
+        document.getElementById('invCategory').value = item.category;
+        document.getElementById('invLocation').value = item.location;
+        document.getElementById('invInUse').value = item.inUse;
+        document.getElementById('invReserve').value = item.reserve;
+        document.getElementById('invMin').value = item.minReserve;
+
+        title.innerHTML = `<i class="ph-bold ph-pencil-simple text-alpine-red"></i> Editar Insumo`;
+        btnDelete.classList.remove('hidden');
+      } else {
+        document.getElementById('invItemId').value = '';
+        title.innerHTML = `<i class="ph-bold ph-plus text-alpine-red"></i> Nuevo Artículo`;
+        btnDelete.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeInventoryModal() {
+      document.getElementById('inventoryModal').classList.add('hidden');
+    }
+
+    function saveInventoryItem(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('invItemId').value;
+      const name = document.getElementById('invName').value.trim();
+      const sector = document.getElementById('invSector').value;
+      const category = document.getElementById('invCategory').value;
+      const location = document.getElementById('invLocation').value.trim();
+      const inUse = parseInt(document.getElementById('invInUse').value, 10) || 0;
+      const reserve = parseInt(document.getElementById('invReserve').value, 10) || 0;
+      const minReserve = parseInt(document.getElementById('invMin').value, 10) || 0;
+
+      if (id) {
+        const item = inventory.find(i => i.id === id);
+        if (item) {
+          item.name = name;
+          item.sector = sector;
+          item.category = category;
+          item.location = location;
+          item.inUse = inUse;
+          item.reserve = reserve;
+          item.minReserve = minReserve;
+        }
+        showToast('Artículo de inventario actualizado');
+      } else {
+        const newItem = {
+          id: 'i_' + Date.now().toString(),
+          name,
+          sector,
+          category,
+          location,
+          inUse,
+          reserve,
+          minReserve
+        };
+        inventory.push(newItem);
+        showToast('Nuevo artículo agregado al inventario');
+      }
+
+      saveStorage();
+      closeInventoryModal();
+      renderApp();
+    }
+
+    function deleteCurrentInvItem() {
+      const id = document.getElementById('invItemId').value;
+      if (id) {
+        inventory = inventory.filter(i => i.id !== id);
+        saveStorage();
+        closeInventoryModal();
+        renderApp();
+        showToast('Artículo eliminado del inventario');
+      }
+    }
+
     function moveTaskStatus(id, newStatus) {
       const task = tasks.find(t => t.id === id);
       if (task) {
@@ -815,8 +1288,8 @@
       document.getElementById('swimlaneView').classList.add('hidden');
       document.getElementById('listView').classList.add('hidden');
 
-      const btnClasses = "px-3 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition";
-      const activeBtnClasses = "px-3 py-1.5 rounded-md font-semibold bg-white text-alpine-red shadow flex items-center gap-1.5 transition";
+      const btnClasses = "px-2.5 py-1.5 rounded-md font-medium text-white hover:bg-white/10 flex items-center gap-1.5 transition";
+      const activeBtnClasses = "px-2.5 py-1.5 rounded-md font-semibold bg-white text-alpine-red shadow flex items-center gap-1.5 transition";
 
       document.getElementById('viewKanbanBtn').className = btnClasses;
       document.getElementById('viewSwimlaneBtn').className = btnClasses;
